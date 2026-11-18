@@ -75,8 +75,7 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
   const openEnvelope = useCallback(async () => {
     if (busy.current || env !== "closed") return;
     busy.current = true;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
     setShaking(true);
     await wait(550);

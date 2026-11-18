@@ -691,15 +691,21 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
   50%      { text-shadow: 0 0 18px rgba(35, 25, 15, 0.25); }
 }
 
+/* Reduce Motion (e.g. iOS Settings → Accessibility → Motion): keep the
+   tap-triggered story (envelope opening, cards, sheets, scratch reveal) but
+   drop the constant ambient motion — looping floats, drifts, bobs and glows. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    animation-delay: 0s !important;
-    transition-duration: 0.15s !important;
-    transition-delay: 0s !important;
-  }
   .snow { display: none; }
+
+  .bg-room,
+  .bg-ribbon-top,
+  .tap-text,
+  .chevron-down,
+  .chevron-up,
+  .stage[data-env="closed"] .mail-close,
+  .stage[data-env="closed"] .ribbon-front,
+  .stage[data-env="closed"] .ribbon-back { animation: none; }
+
+  .sheet.is-open .inv-theme { animation: fade-up 0.7s var(--ease-out) 0.81s both; }
+  .scratch-result.is-revealed { animation: result-pop 0.9s var(--ease-back) both; }
 }
