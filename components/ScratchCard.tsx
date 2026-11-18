@@ -70,11 +70,21 @@ export default function ScratchCard({ code, active, onReveal, canvasFont, style 
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = "source-over";
 
+      // Centre the hint by its drawn pixels, not by baseline/"middle" metrics:
+      // Safari and Chrome disagree on where "middle" is for Thai glyphs.
+      const hint = "( ขูดตรงนี้เพื่อรับ code )";
       ctx.fillStyle = "#837979";
       ctx.font = `${20 * (W / 653)}px ${canvasFont}`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("(  ขูดตรงนี้เพื่อรับ code )", W / 2, H / 2);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      const m = ctx.measureText(hint);
+      const inkLeft = m.actualBoundingBoxLeft;
+      const inkRight = m.actualBoundingBoxRight;
+      const inkUp = m.actualBoundingBoxAscent;
+      const inkDown = m.actualBoundingBoxDescent;
+      const x = (W - (inkLeft + inkRight)) / 2 + inkLeft;
+      const y = (H - (inkUp + inkDown)) / 2 + inkUp;
+      ctx.fillText(hint, x, y);
       setFoilPainted(true);
     }
   }, [active, code, canvasFont]);
