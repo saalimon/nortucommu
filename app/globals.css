@@ -385,6 +385,8 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
   top: -41px;
   width: 959px;
   height: 1741px;
+  border-radius: 29px 29px 0 0;
+  background: rgba(0, 0, 0, 0.79);
   z-index: 20;
   opacity: 0;
   pointer-events: none;
@@ -708,4 +710,111 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
 
   .sheet.is-open .inv-theme { animation: fade-up 0.7s var(--ease-out) 0.81s both; }
   .scratch-result.is-revealed { animation: result-pop 0.9s var(--ease-back) both; }
+}
+
+/* ── Envelope + tap wrapper (repositioned on desktop) ──────────────────── */
+.env-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ── Sound toggle ──────────────────────────────────────────────────────── */
+.sound-toggle {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--ink);
+  background: rgba(255, 250, 242, 0.62);
+  box-shadow: 0 4px 14px rgba(35, 25, 15, 0.18);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+.sound-toggle:hover { transform: scale(1.06); background: rgba(255, 250, 242, 0.85); }
+.sound-toggle:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.sound-toggle.is-muted { opacity: 0.7; }
+
+/* ==========================================================================
+   Desktop — full-width 1920×1080 stage (layout chosen in app/layout.tsx).
+   Title on the left, envelope on the right, sheets open as a centred card.
+   ========================================================================== */
+html[data-layout="desktop"] .stage {
+  width: 1920px;
+  height: 1080px;
+  overflow: visible;           /* background bleeds into any letterbox */
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Background layers oversized so they fill wide and tall screens alike */
+html[data-layout="desktop"] .bg-gradient {
+  left: -700px;
+  top: -500px;
+  width: 3320px;
+  height: 2080px;
+  background: linear-gradient(180deg, #fff 25%, #d8cbba 40.6%, #726b62 80%);
+}
+html[data-layout="desktop"] .bg-room {
+  left: -600px;
+  top: -460px;
+  width: 3120px;
+  height: 2000px;
+}
+html[data-layout="desktop"] .bg-vignette {
+  inset: auto;
+  left: -700px;
+  top: -500px;
+  width: 3320px;
+  height: 2080px;
+  background: radial-gradient(1330px 780px at 1660px 1060px,
+      rgba(217, 217, 217, 0) 47.501%,
+      #d9d9d9 80.122%);
+}
+html[data-layout="desktop"] .bg-ribbon-top    { --cx: 760; --cy: 120; }
+html[data-layout="desktop"] .bg-ribbon-bottom { --cx: 1240; --cy: 1080; }
+
+/* Title column */
+html[data-layout="desktop"] .date        { left: 150px; top: 205px; }
+html[data-layout="desktop"] .title-winter { left: 132px; top: 222px; font-size: 260px; }
+html[data-layout="desktop"] .title-party  { left: 132px; top: 452px; font-size: 168px; }
+html[data-layout="desktop"] .tag-left    { left: 150px; top: 680px; }
+html[data-layout="desktop"] .tag-right   { left: 795px; top: 680px; }
+html[data-layout="desktop"] .credit      { left: 150px; top: 990px; }
+
+/* Envelope column: same Figma geometry, moved and scaled as one group */
+html[data-layout="desktop"] .env-wrap {
+  transform: translate(1017px, -276px) scale(0.8);
+  transform-origin: 0 0;
+}
+
+/* Sheets: the 959×1700 frame shown as a centred card */
+html[data-layout="desktop"] .sheet-shade {
+  left: -1500px;
+  top: -1000px;
+  width: 4920px;
+  height: 3080px;
+  border-radius: 0;
+}
+html[data-layout="desktop"] .sheet {
+  inset: auto;
+  left: 480.5px;
+  top: 18.8px;
+  width: 959px;
+  height: 1700px;
+  transform: scale(0.589);
+  transform-origin: 50% 0;
+  clip-path: inset(70px 0 0 0 round 29px);
+}
+html[data-layout="desktop"] .sheet-panel { border-radius: 29px; }
+html[data-layout="desktop"] .inv-frame   { height: 1540px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-layout="desktop"] .bg-room { animation: none; }
 }

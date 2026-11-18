@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
   basePath,
   trailingSlash: true,
   images: { unoptimized: true },
+  // `next dev` blocks its scripts/HMR for non-localhost hosts; allow ngrok
+  // tunnels so the dev server can be tested on a phone.
+  allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok-free.dev", "*.ngrok.app", "*.ngrok.dev", "*.ngrok.io"],
+  // Lets client code build URLs for files in /public (e.g. sound effects).
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
 };
 
 export default nextConfig;

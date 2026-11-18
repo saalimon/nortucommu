@@ -14,7 +14,7 @@ export default function Snow() {
       Array.from({ length: 34 }, () => {
         const dur = 10 + Math.random() * 12;
         return {
-          left: Math.random() * 959,
+          left: Math.random() * 100,
           size: 3 + Math.random() * 8,
           o: 0.35 + Math.random() * 0.5,
           dur,
@@ -33,7 +33,7 @@ export default function Snow() {
           className="flake"
           style={
             {
-              left: `${f.left}px`,
+              left: `${f.left}%`,
               "--size": `${f.size}px`,
               "--o": f.o.toFixed(2),
               "--dur": `${f.dur}s`,

@@ -15,8 +15,10 @@ export const viewport: Viewport = {
   themeColor: "#726b62",
 };
 
-// Scales the 959×1700 stage to the screen before first paint (no flash).
-const fitScript = `(function(){var r=document.documentElement;function f(){var v=window.visualViewport,w=v?v.width:innerWidth,h=v?v.height:innerHeight;r.style.setProperty('--s',Math.min(w/959,h/1700).toFixed(4))}f();addEventListener('resize',f);window.visualViewport&&visualViewport.addEventListener('resize',f)})();`;
+// Picks the layout and scales the stage before first paint (no flash):
+//  - mobile  (portrait-ish): 959×1700 Figma frame, fit inside the screen
+//  - desktop (landscape):    1920×1080 stage, fit to full width
+const fitScript = `(function(){var r=document.documentElement;function f(){var v=window.visualViewport,w=v?v.width:innerWidth,h=v?v.height:innerHeight,d=w>=900&&w/h>=1.25;r.setAttribute('data-layout',d?'desktop':'mobile');r.style.setProperty('--s',(d?Math.min(w/1920,h/1080):Math.min(w/959,h/1700)).toFixed(4))}f();addEventListener('resize',f);window.visualViewport&&visualViewport.addEventListener('resize',f)})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,7 +30,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: fitScript }} />
       </head>
-      <body>{children}</body>
+      {/* Browser extensions (e.g. Grammarly) add attributes to <body> before hydration. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

@@ -28,12 +28,12 @@ import monogramBlack from "@/assets/monogram-w-black.svg";
 import monogramInk from "@/assets/monogram-w-ink.svg";
 import ribbon1 from "@/assets/ribbon-1.png";
 import ribbon2 from "@/assets/ribbon-2.png";
-import sheetShade from "@/assets/sheet-shade.svg";
 import underline from "@/assets/underline.svg";
 import ScratchCard from "@/components/ScratchCard";
 import Snow from "@/components/Snow";
 import { burst } from "@/lib/burst";
 import { getDressCode, saveDressCode, type DressCode } from "@/lib/dresscode";
+import { isMuted, playCue, preloadSound, setMuted, unlockSound } from "@/lib/sound";
 
 type Env = "closed" | "open" | "cards";
 type Sheet = "none" | "invite" | "code";
@@ -45,7 +45,9 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
   const [sheet, setSheet] = useState<Sheet>("none");
   const [shaking, setShaking] = useState(false);
   const [code, setCode] = useState<DressCode | null>(null);
+  const [muted, setMutedState] = useState(false);
   const busy = useRef(false);
+  const sheetRef = useRef<Sheet>("none");
   const sealRef = useRef<HTMLDivElement>(null);
   const swipeStart = useRef<number | null>(null);
 
@@ -62,22 +64,61 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
     const scene = params.get("scene");
     if (scene === "cards" || scene === "invite" || scene === "code") {
       setEnv("cards");
-      setSheet(scene === "cards" ? "none" : scene);
+      sheetRef.current = scene === "cards" ? "none" : scene;
+      setSheet(sheetRef.current);
     }
   }, []);
 
+  // Sound: fetch early, unlock on the first real gesture (iOS needs touchend/click).
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setSheet("none");
+    setMutedState(isMuted());
+    preloadSound();
+    const unlock = () => unlockSound();
+    const opts = { capture: true, passive: true } as const;
+    document.addEventListener("touchend", unlock, opts);
+    document.addEventListener("click", unlock, opts);
+    document.addEventListener("keydown", unlock, opts);
+    return () => {
+      document.removeEventListener("touchend", unlock, opts);
+      document.removeEventListener("click", unlock, opts);
+      document.removeEventListener("keydown", unlock, opts);
+    };
+  }, []);
+
+  /** Changes sheet and plays a page turn: forward going deeper, back otherwise. */
+  const goSheet = useCallback((next: Sheet) => {
+    const prev = sheetRef.current;
+    if (prev === next) return;
+    sheetRef.current = next;
+    setSheet(next);
+    const forward = next === "code" || (next === "invite" && prev === "none");
+    playCue(forward ? "turn" : "turnBack");
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && goSheet("none");
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [goSheet]);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+    if (!next) {
+      unlockSound();
+      setTimeout(() => playCue("rustle", { volume: 0.6 }), 60);
+    }
+  };
 
   const openEnvelope = useCallback(async () => {
     if (busy.current || env !== "closed") return;
     busy.current = true;
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    unlockSound();
 
     setShaking(true);
+    playCue("rustle");
     await wait(550);
     setShaking(false);
 
@@ -91,15 +132,17 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
       maxSize: 20,
     });
     setEnv("open");
+    playCue("unfold");
 
     await wait(1000);
     setEnv("cards");
+    playCue("slide", { volume: 0.7, rate: 0.9 });
     await wait(350);
     busy.current = false;
   }, [env]);
 
   const openSheet = (s: Sheet) => {
-    if (!busy.current) setSheet(s);
+    if (!busy.current) goSheet(s);
   };
 
   const onTap = () => {
@@ -108,6 +151,7 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
   };
 
   const onReveal = useCallback(() => {
+    playCue("unfold", { volume: 0.6, rate: 1.1 });
     setCode((c) => {
       if (!c) return c;
       const next = { ...c, revealed: true };
@@ -162,7 +206,8 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
             <p className="script tag tag-right">#Cozy&amp;Chill</p>
           </header>
 
-          {/* ── Envelope ── */}
+          {/* ── Envelope + tap button (moved to the right column on desktop) ── */}
+          <div className="env-wrap">
           <div className="envelope">
             <div className="piece ribbon-back">
               <img src={ribbon2.src} alt="" />
@@ -212,24 +257,19 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
             </span>
             <span className="tap-text">{cardsOut ? "Tap to Read !" : "Tap to Open !"}</span>
           </button>
+          </div>
 
           <p className="script credit">provided by @darknessdearm &amp; @saalimon</p>
 
           {/* ── Sheets (Frames 5 & 6) ── */}
-          <img
-            className="sheet-shade"
-            src={sheetShade.src}
-            alt=""
-            aria-hidden="true"
-            onClick={() => setSheet("none")}
-          />
+          <div className="sheet-shade" aria-hidden="true" onClick={() => goSheet("none")} />
 
           <section
             className={`sheet sheet-invite${inviteOpen ? " is-open" : ""}`}
             aria-label="Invitation"
             aria-hidden={sheet !== "invite"}
             inert={sheet !== "invite"}
-            {...swipe(() => setSheet("code"), () => setSheet("none"))}
+            {...swipe(() => goSheet("code"), () => goSheet("none"))}
           >
             <img className="sheet-panel" src={invitePanel.src} alt="" />
             <div className="sheet-frame inv-frame" />
@@ -267,7 +307,7 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
               className="chevron chevron-down"
               type="button"
               aria-label="Next: your dress code"
-              onClick={() => setSheet("code")}
+              onClick={() => goSheet("code")}
             >
               <img src={chevronDown.src} alt="" />
             </button>
@@ -278,14 +318,14 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
             aria-label="Your dress code"
             aria-hidden={!codeOpen}
             inert={!codeOpen}
-            {...swipe(undefined, () => setSheet("invite"))}
+            {...swipe(undefined, () => goSheet("invite"))}
           >
             <div className="sheet-panel code-panel" />
             <button
               className="chevron chevron-up"
               type="button"
               aria-label="Back to the invitation"
-              onClick={() => setSheet("invite")}
+              onClick={() => goSheet("invite")}
             >
               <img src={chevronUp.src} alt="" />
             </button>
@@ -295,7 +335,13 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
               Your Dress Code
             </h2>
 
-            <ScratchCard code={code} active={codeOpen} onReveal={onReveal} canvasFont={canvasFont} style={d(3)} />
+            <ScratchCard
+              code={code}
+              active={codeOpen}
+              onReveal={onReveal}
+              canvasFont={canvasFont}
+              style={d(3)}
+            />
 
             <h3 className="code-magic r" style={d(4)}>
               Let the Magic Guide you
@@ -309,7 +355,7 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
               Winter Indoor Party
             </p>
 
-            <button className="close-btn r" type="button" style={d(6)} onClick={() => setSheet("none")}>
+            <button className="close-btn r" type="button" style={d(6)} onClick={() => goSheet("none")}>
               <span className="piece close-brush">
                 <img src={brushDark.src} alt="" />
               </span>
@@ -318,6 +364,29 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
           </section>
         </div>
       </main>
+
+      <button
+        className={`sound-toggle${muted ? " is-muted" : ""}`}
+        type="button"
+        aria-pressed={!muted}
+        aria-label={muted ? "Turn sound on" : "Turn sound off"}
+        onClick={toggleMute}
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+          {muted ? (
+            <path d="M16.5 9.5l5 5m0-5l-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          ) : (
+            <path
+              d="M16 8.5a4.5 4.5 0 010 7M18.5 6a8 8 0 010 12"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              fill="none"
+            />
+          )}
+        </svg>
+      </button>
     </>
   );
 }

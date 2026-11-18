@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import foilImage from "@/assets/scratch-foil.png";
 import { burst } from "@/lib/burst";
 import type { DressCode } from "@/lib/dresscode";
+import { preloadSound, scratchMove, scratchStart, scratchStop } from "@/lib/sound";
 
 const REVEAL_AT = 0.5; // share of foil scratched off before auto-reveal
 const MAX_RESULT_WIDTH = 600;
@@ -44,6 +45,7 @@ export default function ScratchCard({ code, active, onReveal, canvasFont, style 
         setRevealed(true);
         return;
       }
+      preloadSound("scratch");
       const img = new Image();
       img.onload = () => paintFoil(img);
       img.src = foilImage.src;
@@ -91,6 +93,7 @@ export default function ScratchCard({ code, active, onReveal, canvasFont, style 
 
   const reveal = useCallback(() => {
     if (revealed) return;
+    scratchStop();
     setRevealed(true);
     onReveal();
     burst(sparklesRef.current, {
@@ -128,6 +131,8 @@ export default function ScratchCard({ code, active, onReveal, canvasFont, style 
       y: ((e.clientY - rect.top) / rect.height) * canvas.height,
     };
     const from = last.current ?? p;
+    // Louder / higher pitch the faster the finger moves (canvas px per event).
+    scratchMove(Math.hypot(p.x - from.x, p.y - from.y) / 45);
     ctx.globalCompositeOperation = "destination-out";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -145,6 +150,7 @@ export default function ScratchCard({ code, active, onReveal, canvasFont, style 
     if (!scratching.current) return;
     scratching.current = false;
     last.current = null;
+    scratchStop();
     if (!revealed && clearedRatio() >= REVEAL_AT) reveal();
   }
 
@@ -168,6 +174,7 @@ export default function ScratchCard({ code, active, onReveal, canvasFont, style 
           if (revealed) return;
           scratching.current = true;
           last.current = null;
+          scratchStart();
           try {
             e.currentTarget.setPointerCapture(e.pointerId);
           } catch {
