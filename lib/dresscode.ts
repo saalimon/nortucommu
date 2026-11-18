@@ -5,10 +5,10 @@ export const ITEMS = ["Book", "Bloom", "Hat", "Wand", "Ring", "Medal", "Cloak", 
 export type DressCode = {
   color: (typeof COLORS)[number];
   item: (typeof ITEMS)[number];
-  revealed: boolean;
 };
 
-const STORAGE_KEY = "nortucommu.dresscode.v1";
+/** Key used by older versions that saved the draw; cleared so it can't linger. */
+const LEGACY_STORAGE_KEY = "nortucommu.dresscode.v1";
 
 /** Unbiased random index, using crypto when available. */
 function randomIndex(length: number): number {
@@ -22,38 +22,18 @@ function randomIndex(length: number): number {
   return Math.floor(Math.random() * length);
 }
 
-function isValid(value: unknown): value is DressCode {
-  const v = value as DressCode | null;
-  return !!v && COLORS.includes(v.color) && ITEMS.includes(v.item);
-}
-
-export function saveDressCode(code: DressCode) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(code));
-  } catch {
-    /* private mode / storage blocked */
-  }
-}
-
 /**
- * Returns this guest's dress code. The first visit draws a random color and
- * item and stores it, so reloading shows the same pair. `reroll` forces a
- * fresh draw.
+ * Draws a random color and item. Nothing is saved: every page load gets a
+ * fresh foil and a new draw, so guests can scratch again after refreshing.
  */
-export function getDressCode(reroll = false): DressCode {
-  if (!reroll) {
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (isValid(stored)) return stored;
-    } catch {
-      /* fall through to a new draw */
-    }
+export function drawDressCode(): DressCode {
+  try {
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    /* storage blocked — nothing to clean up */
   }
-  const code: DressCode = {
+  return {
     color: COLORS[randomIndex(COLORS.length)],
     item: ITEMS[randomIndex(ITEMS.length)],
-    revealed: false,
   };
-  saveDressCode(code);
-  return code;
 }

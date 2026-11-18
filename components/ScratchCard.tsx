@@ -41,10 +41,6 @@ export default function ScratchCard({ code, active, onReveal, canvasFont, style 
         const w = result.offsetWidth;
         if (w > MAX_RESULT_WIDTH) result.style.fontSize = `${Math.floor(96 * (MAX_RESULT_WIDTH / w))}px`;
       }
-      if (code.revealed) {
-        setRevealed(true);
-        return;
-      }
       preloadSound("scratch");
       const img = new Image();
       img.onload = () => paintFoil(img);

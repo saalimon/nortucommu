@@ -8,8 +8,8 @@
  *   cards ─Tap to Read→ invite sheet (Frame 5) ─chevron→ dress-code sheet (Frame 6)
  *   dress-code ─Tap to Close→ back to cards
  *
- * URL options:  ?reroll  draw a new color & item
- *               ?scene=cards|invite|code  jump straight to a screen
+ * Every load draws a new color & item (nothing is saved).
+ * URL option:  ?scene=cards|invite|code  jump straight to a screen
  */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type TouchEvent } from "react";
@@ -32,7 +32,7 @@ import underline from "@/assets/underline.svg";
 import ScratchCard from "@/components/ScratchCard";
 import Snow from "@/components/Snow";
 import { burst } from "@/lib/burst";
-import { getDressCode, saveDressCode, type DressCode } from "@/lib/dresscode";
+import { drawDressCode, type DressCode } from "@/lib/dresscode";
 import { isMuted, playCue, preloadSound, setMuted, unlockSound } from "@/lib/sound";
 
 type Env = "closed" | "open" | "cards";
@@ -54,13 +54,7 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
   // Draw (or restore) the dress code and honour URL options.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const reroll = params.has("reroll");
-    setCode(getDressCode(reroll));
-    if (reroll) {
-      params.delete("reroll");
-      const qs = params.toString();
-      window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
-    }
+    setCode(drawDressCode());
     const scene = params.get("scene");
     if (scene === "cards" || scene === "invite" || scene === "code") {
       setEnv("cards");
@@ -152,12 +146,6 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
 
   const onReveal = useCallback(() => {
     playCue("unfold", { volume: 0.6, rate: 1.1 });
-    setCode((c) => {
-      if (!c) return c;
-      const next = { ...c, revealed: true };
-      saveDressCode(next);
-      return next;
-    });
   }, []);
 
   const swipe = (up?: () => void, down?: () => void) => ({

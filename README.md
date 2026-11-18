@@ -13,13 +13,11 @@ npm run build      # static site in ./out
 
 ## Random dress code
 
-Each guest draws one color and one item. Edit the lists in `lib/dresscode.ts`.
-The draw is saved in the guest's browser, so reloading shows the same pair.
+Each page load draws one random color and one item under a fresh scratch-off
+foil; nothing is saved, so guests can refresh and scratch again. Edit the lists
+in `lib/dresscode.ts`.
 
-URL options:
-
-- `?reroll`: clear the saved pair and draw again
-- `?scene=cards|invite|code`: jump straight to a screen
+URL option: `?scene=cards|invite|code` jumps straight to a screen.
 
 ## Deploy
 
