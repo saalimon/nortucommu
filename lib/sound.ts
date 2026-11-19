@@ -2,10 +2,13 @@
  * Sound effects (Web Audio API).
  *
  *  paper.mp3   "Foley Paper Handling & Page Turning SFX" by LensPulse (Pixabay Content License)
- *  scratch.mp3 "Pen writing on paper" by freesound_community (Pixabay Content License)
+ *  scratch-loop.wav  4.9 s mono loop cut from "Pen writing on paper" by
+ *                    freesound_community (Pixabay Content License), 12.5–17.4 s,
+ *                    crossfaded at the seam. Small on purpose: decoded audio
+ *                    lives in RAM, and the full 28 s file cost ~11 MB on phones.
  *
- * Short cues are sliced out of paper.mp3. Scratching plays a looping slice of
- * scratch.mp3 whose loudness and pitch follow how fast the foil is rubbed.
+ * Short cues are sliced out of paper.mp3. Scratching plays scratch-loop.wav on a
+ * loop; its loudness and pitch follow how fast the foil is rubbed.
  *
  * Browsers only allow audio after a user gesture: call `unlockSound()` from
  * the first tap/click. The mute choice is remembered per device.
@@ -17,7 +20,7 @@ export type Cue = "rustle" | "unfold" | "slide" | "turn" | "turnBack";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const FILES: Record<FileKey, string> = {
   paper: `${BASE}/sfx/paper.mp3`,
-  scratch: `${BASE}/sfx/scratch.mp3`,
+  scratch: `${BASE}/sfx/scratch-loop.wav`,
 };
 
 /*
@@ -35,8 +38,8 @@ const CUES: Record<Cue, [number, number]> = {
   turnBack: [5.12, 0.63], // C — back / close
 };
 
-/* Steady stretch of scratch.mp3 (no loud pen taps) used as the scratch loop. */
-const SCRATCH_LOOP: [number, number] = [12.5, 17.4];
+/* The whole of scratch-loop.wav is the loop. */
+const SCRATCH_LOOP: [number, number] = [0, 4.9];
 /** Scratch loudness: gain at a slow stroke → at a fast stroke. */
 const SCRATCH_GAIN_MIN = 2.2;
 const SCRATCH_GAIN_MAX = 4.5;

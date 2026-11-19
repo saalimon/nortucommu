@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type TouchEvent } from "react";
-import bgRoom from "@/assets/bg-room.jpg";
+import bgRoom from "@/assets/bg-room-soft.jpg"; // pre-blurred: no live CSS filter
 import brushDark from "@/assets/brush-dark.svg";
 import brushWhite from "@/assets/brush-white.svg";
 import chevronDown from "@/assets/chevron-down.svg";
@@ -131,6 +131,9 @@ export default function Invitation({ canvasFont }: { canvasFont: string }) {
     await wait(1000);
     setEnv("cards");
     playCue("slide", { volume: 0.7, rate: 0.9 });
+    // Fetch the scratch sound now, while nothing heavy is animating,
+    // instead of when the dress-code sheet opens.
+    setTimeout(() => preloadSound("scratch"), 1200);
     await wait(350);
     busy.current = false;
   }, [env]);

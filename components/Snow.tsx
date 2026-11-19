@@ -11,7 +11,8 @@ export default function Snow() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     setFlakes(
-      Array.from({ length: 34 }, () => {
+      // Fewer flakes on phones: each one is its own animated layer.
+      Array.from({ length: document.documentElement.dataset.layout === "desktop" ? 34 : 18 }, () => {
         const dur = 10 + Math.random() * 12;
         return {
           left: Math.random() * 100,

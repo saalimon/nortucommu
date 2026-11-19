@@ -46,14 +46,15 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 
 p, h1, h2, h3 { margin: 0; font-weight: 400; }
 
-/* Letterbox fill behind the stage on wide / short screens */
+/* Letterbox fill behind the stage on wide / short screens.
+   The image is pre-blurred (tiny + soft) — no live CSS filter, which is a
+   full-screen GPU surface that low-memory phones can't afford. */
 .backdrop {
   position: fixed;
-  inset: -40px;
+  inset: 0;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(216, 203, 186, 0.6) 35%, rgba(114, 107, 98, 0.85)),
-    url("../assets/bg-room.jpg") center / cover no-repeat;
-  filter: blur(18px);
+    url("../assets/bg-backdrop.jpg") center / cover no-repeat;
 }
 
 .viewport {
@@ -106,8 +107,7 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
   width: 1066px;
   height: 1787px;
   background: linear-gradient(180deg, #fff 4.952%, #d8cbba 31.882%, #726b62 100%);
-  mix-blend-mode: multiply;
-  opacity: 0.7;
+  opacity: 0.7; /* Figma uses multiply, but over white that's identical to normal */
 }
 
 .bg-room {
@@ -117,9 +117,7 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
   width: 1420px;
   height: 1893px;
   object-fit: cover;
-  filter: blur(6px);
-  opacity: 0.62;
-  animation: room-breathe 18s ease-in-out infinite alternate;
+  opacity: 0.62; /* image is pre-blurred (= the design's 6px blur) */
 }
 
 .bg-vignette {
@@ -141,7 +139,6 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
   --cx: 335.16; --cy: 270.98; --w: 2072.398; --h: 801.385; --r: 32.76;
   opacity: 0.42;
   mix-blend-mode: multiply;
-  animation: ribbon-sway 9s ease-in-out infinite alternate;
 }
 
 /* Snow */
@@ -152,8 +149,7 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  filter: blur(0.6px);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 45%, rgba(255, 255, 255, 0) 72%);
   opacity: var(--o);
   animation: snow-fall var(--dur) linear var(--delay) infinite;
 }
@@ -390,21 +386,41 @@ p, h1, h2, h3 { margin: 0; font-weight: 400; }
   z-index: 20;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.5s ease;
+  visibility: hidden; /* not drawn at all while closed */
+  transition: opacity 0.5s ease, visibility 0s linear 0.5s;
 }
-.stage:not([data-sheet="none"]) .sheet-shade { opacity: 1; pointer-events: auto; }
+.stage:not([data-sheet="none"]) .sheet-shade {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity 0.5s ease, visibility 0s;
+}
 
 .sheet {
   position: absolute;
   inset: 0;
   z-index: 21;
   translate: 0 108%;
-  transition: translate 0.75s var(--ease-sheet);
+  visibility: hidden; /* closed sheets are not drawn (saves GPU memory) */
+  transition: translate 0.75s var(--ease-sheet), visibility 0s linear 0.75s;
   pointer-events: none;
 }
 .sheet-code { z-index: 22; }
-.sheet.is-open { translate: 0 0; pointer-events: auto; }
-.stage[data-sheet="code"] .sheet-invite { translate: 0 -3%; scale: 0.97; transition: translate 0.75s var(--ease-sheet), scale 0.75s var(--ease-sheet); }
+.sheet.is-open {
+  translate: 0 0;
+  pointer-events: auto;
+  visibility: visible;
+  transition: translate 0.75s var(--ease-sheet), visibility 0s;
+}
+.stage[data-sheet="code"] .sheet-invite { translate: 0 -3%; scale: 0.97; transition: translate 0.75s var(--ease-sheet), scale 0.75s var(--ease-sheet), visibility 0s; }
+
+/* Phones: once a sheet covers the screen, stop drawing the scene behind it
+   (envelope, snow, ribbons, title). Low-memory iPhones otherwise run out of
+   GPU memory and Safari reloads the page. Shown again instantly on close. */
+html:not([data-layout="desktop"]) .stage:not([data-sheet="none"]) :is(.header, .env-wrap, .snow, .credit, .bg-ribbon-top, .bg-ribbon-bottom) {
+  visibility: hidden;
+  transition: visibility 0s linear 0.8s;
+}
 
 .sheet-panel {
   position: absolute;
@@ -762,6 +778,7 @@ html[data-layout="desktop"] .bg-gradient {
   background: linear-gradient(180deg, #fff 25%, #d8cbba 40.6%, #726b62 80%);
 }
 html[data-layout="desktop"] .bg-room {
+  animation: room-breathe 18s ease-in-out infinite alternate;
   left: -600px;
   top: -460px;
   width: 3120px;
@@ -777,7 +794,7 @@ html[data-layout="desktop"] .bg-vignette {
       rgba(217, 217, 217, 0) 47.501%,
       #d9d9d9 80.122%);
 }
-html[data-layout="desktop"] .bg-ribbon-top    { --cx: 760; --cy: 120; }
+html[data-layout="desktop"] .bg-ribbon-top    { --cx: 760; --cy: 120; animation: ribbon-sway 9s ease-in-out infinite alternate; }
 html[data-layout="desktop"] .bg-ribbon-bottom { --cx: 1240; --cy: 1080; }
 
 /* Title column */
@@ -816,5 +833,6 @@ html[data-layout="desktop"] .sheet-panel { border-radius: 29px; }
 html[data-layout="desktop"] .inv-frame   { height: 1540px; }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-layout="desktop"] .bg-room { animation: none; }
+  html[data-layout="desktop"] .bg-room,
+  html[data-layout="desktop"] .bg-ribbon-top { animation: none; }
 }
