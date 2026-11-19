@@ -1,0 +1,5 @@
+:HL["/nortucommu/_next/static/chunks/1o4ke96nm--ds.css","style"]
+:HL["/nortucommu/_next/static/chunks/1od64-qz3_e3e.css","style"]
+2:[["children",{"s":"__PAGE__","h":160}]]
+1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
+0:{"b":"ZX_vC5kUrAeNufoxE-N4N","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
